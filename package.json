@@ -1,0 +1,12 @@
+{
+  "name": "ip-checker",
+  "version": "1.0.0",
+  "description": "White IP checker — проверка белого IP адреса",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

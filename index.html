@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IP Checker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Unbounded:wght@300;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0c0f;
+      --surface: #111318;
+      --border: #1e2229;
+      --border-bright: #2a3040;
+      --text: #d4dce8;
+      --muted: #5a6478;
+      --accent: #3b82f6;
+      --accent-dim: rgba(59,130,246,0.12);
+      --green: #22c55e;
+      --green-dim: rgba(34,197,94,0.12);
+      --red: #ef4444;
+      --red-dim: rgba(239,68,68,0.12);
+      --yellow: #f59e0b;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* Subtle grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 20px 24px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      flex-shrink: 0;
+    }
+
+    .header-title {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 11px;
+      font-weight: 300;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .card-body { padding: 28px 24px; }
+
+    /* LOGIN FORM */
+    #loginView {}
+
+    .login-title {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+
+    .login-subtitle {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+
+    .field { margin-bottom: 16px; }
+
+    label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border-bright);
+      border-radius: 3px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus { border-color: var(--accent); }
+
+    .btn {
+      width: 100%;
+      padding: 11px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.15s, background 0.15s;
+    }
+
+    .btn:hover { opacity: 0.88; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn.secondary {
+      background: transparent;
+      border: 1px solid var(--border-bright);
+      color: var(--muted);
+      margin-top: 10px;
+    }
+    .btn.secondary:hover { border-color: var(--text); color: var(--text); }
+
+    .error-msg {
+      background: var(--red-dim);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 3px;
+      padding: 9px 12px;
+      font-size: 12px;
+      color: var(--red);
+      margin-top: 14px;
+      display: none;
+    }
+
+    /* CHECK VIEW */
+    #checkView { display: none; }
+
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .ip-display {
+      background: var(--bg);
+      border: 1px solid var(--border-bright);
+      border-radius: 3px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+
+    .ip-value {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.04em;
+      word-break: break-all;
+    }
+
+    .copy-btn {
+      flex-shrink: 0;
+      background: none;
+      border: 1px solid var(--border-bright);
+      border-radius: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+
+    .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border-radius: 3px;
+      border: 1px solid;
+      margin-bottom: 20px;
+      transition: all 0.3s;
+    }
+
+    .status-badge.white {
+      background: var(--green-dim);
+      border-color: rgba(34,197,94,0.35);
+    }
+
+    .status-badge.gray {
+      background: var(--red-dim);
+      border-color: rgba(239,68,68,0.35);
+    }
+
+    .status-badge.unknown {
+      background: var(--accent-dim);
+      border-color: rgba(59,130,246,0.35);
+    }
+
+    .status-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .status-text { flex: 1; }
+
+    .status-main {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .status-badge.white .status-main { color: var(--green); }
+    .status-badge.gray  .status-main { color: var(--red); }
+    .status-badge.unknown .status-main { color: var(--accent); }
+
+    .status-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .explanation {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 12px 14px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+      padding: 8px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .meta-val { color: var(--text); }
+
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid var(--border-bright);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-state {
+      text-align: center;
+      padding: 30px 0 10px;
+      color: var(--muted);
+      font-size: 13px;
+      display: none;
+    }
+
+    .card-footer {
+      padding: 12px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-user { font-size: 11px; color: var(--muted); }
+    .footer-user span { color: var(--text); }
+
+    .logout-btn {
+      font-size: 11px;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      text-decoration: underline;
+      padding: 0;
+    }
+
+    .logout-btn:hover { color: var(--red); }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .fadein { animation: fadeIn 0.25s ease forwards; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+      <div class="header-dot"></div>
+      <div class="header-title">IP Checker / белый адрес</div>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="card-body" id="loginView">
+      <div class="login-title">Вход</div>
+      <div class="login-subtitle">// авторизуйтесь для проверки IP</div>
+
+      <div class="field">
+        <label>Логин</label>
+        <input type="text" id="username" placeholder="admin" autocomplete="username" />
+      </div>
+      <div class="field">
+        <label>Пароль</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+
+      <button class="btn" id="loginBtn" onclick="doLogin()">Войти</button>
+      <div class="error-msg" id="loginError"></div>
+    </div>
+
+    <!-- CHECK -->
+    <div class="card-body" id="checkView">
+      <div class="section-label">Ваш IP адрес</div>
+
+      <div class="ip-display">
+        <div class="ip-value" id="ipValue">—</div>
+        <button class="copy-btn" onclick="copyIP()">copy</button>
+      </div>
+
+      <div class="loading-state" id="loadingState">
+        <span class="spinner"></span>Определяем статус...
+      </div>
+
+      <div id="resultBlock" style="display:none">
+        <div class="status-badge unknown" id="statusBadge">
+          <div class="status-icon" id="statusIcon">⬤</div>
+          <div class="status-text">
+            <div class="status-main" id="statusMain">—</div>
+            <div class="status-sub" id="statusSub">—</div>
+          </div>
+        </div>
+
+        <div class="explanation" id="explanationText"></div>
+
+        <div class="meta-row">
+          <span>Проверено</span>
+          <span class="meta-val" id="checkedAt">—</span>
+        </div>
+        <div class="meta-row" style="border-top:none; padding-top:4px;">
+          <span>RFC6598 CGNAT диапазон</span>
+          <span class="meta-val">100.64.0.0/10</span>
+        </div>
+      </div>
+
+      <button class="btn" onclick="checkIP()" style="margin-top:20px;">Проверить снова</button>
+    </div>
+
+    <div class="card-footer" id="footerBar" style="display:none">
+      <div class="footer-user">Вошли как: <span id="footerUser">—</span></div>
+      <button class="logout-btn" onclick="doLogout()">выйти</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let authToken = localStorage.getItem('ip_token');
+  let currentUser = localStorage.getItem('ip_user');
+
+  // Auto-login if token exists
+  window.addEventListener('load', () => {
+    if (authToken) {
+      showCheckView();
+      checkIP();
+    }
+
+    document.getElementById('password').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doLogin();
+    });
+    document.getElementById('username').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('password').focus();
+    });
+  });
+
+  async function doLogin() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('loginBtn');
+    const err = document.getElementById('loginError');
+
+    if (!username || !password) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Входим...';
+    err.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        authToken = data.token;
+        currentUser = username;
+        localStorage.setItem('ip_token', authToken);
+        localStorage.setItem('ip_user', username);
+        showCheckView();
+        checkIP();
+      } else {
+        err.textContent = data.error || 'Ошибка авторизации';
+        err.style.display = 'block';
+      }
+    } catch (e) {
+      err.textContent = 'Ошибка соединения с сервером';
+      err.style.display = 'block';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Войти';
+  }
+
+  async function doLogout() {
+    try {
+      await fetch('/api/logout', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+    } catch {}
+    authToken = null;
+    currentUser = null;
+    localStorage.removeItem('ip_token');
+    localStorage.removeItem('ip_user');
+    showLoginView();
+  }
+
+  function showLoginView() {
+    document.getElementById('loginView').style.display = 'block';
+    document.getElementById('checkView').style.display = 'none';
+    document.getElementById('footerBar').style.display = 'none';
+    document.getElementById('loginError').style.display = 'none';
+  }
+
+  function showCheckView() {
+    document.getElementById('loginView').style.display = 'none';
+    document.getElementById('checkView').style.display = 'block';
+    document.getElementById('footerBar').style.display = 'flex';
+    document.getElementById('footerUser').textContent = currentUser || '—';
+  }
+
+  async function checkIP() {
+    document.getElementById('loadingState').style.display = 'block';
+    document.getElementById('resultBlock').style.display = 'none';
+    document.getElementById('ipValue').textContent = '...';
+
+    try {
+      const res = await fetch('/api/check-ip', {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem('ip_token');
+        localStorage.removeItem('ip_user');
+        authToken = null;
+        showLoginView();
+        return;
+      }
+
+      const data = await res.json();
+      renderResult(data);
+    } catch (e) {
+      document.getElementById('ipValue').textContent = 'Ошибка';
+      document.getElementById('loadingState').style.display = 'none';
+    }
+  }
+
+  function renderResult(data) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('resultBlock').style.display = 'block';
+    document.getElementById('resultBlock').classList.add('fadein');
+
+    document.getElementById('ipValue').textContent = data.ip;
+
+    const badge = document.getElementById('statusBadge');
+    badge.className = 'status-badge ' + (data.isWhite ? 'white' : 'gray');
+
+    document.getElementById('statusIcon').textContent = data.isWhite ? '✓' : '✗';
+    document.getElementById('statusMain').textContent = data.isWhite ? 'БЕЛЫЙ IP' : 'СЕРЫЙ IP';
+    document.getElementById('statusSub').textContent = data.statusText;
+    document.getElementById('explanationText').textContent = data.explanation;
+
+    const dt = new Date(data.checkedAt);
+    document.getElementById('checkedAt').textContent = dt.toLocaleTimeString('ru-RU');
+  }
+
+  function copyIP() {
+    const ip = document.getElementById('ipValue').textContent;
+    if (!ip || ip === '—' || ip === '...') return;
+    navigator.clipboard.writeText(ip).then(() => {
+      const btn = document.querySelector('.copy-btn');
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1500);
+    });
+  }
+</script>
+</body>
+</html>
